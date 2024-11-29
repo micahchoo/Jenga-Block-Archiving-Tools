@@ -1,0 +1,18 @@
+{
+  "name": "immich-metadata-editor",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Web-based metadata editor for Immich with proxy server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node metadatatest.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "http-proxy-middleware": "^3.0.3",
+    "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2"
+  }
+}

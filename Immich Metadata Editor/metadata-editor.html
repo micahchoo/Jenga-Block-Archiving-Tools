@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immich Metadata Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+// Use Babel to transform JSX
+<script type="text/babel">
+    // Import React hooks
+    const { useState, useEffect } = React;
+
+    /**
+     * Component for handling API key input and storage
+     * @param {Object} props - Component props
+     * @param {Function} props.onSubmit - Callback function when API key is submitted
+     */
+    function ApiKeyInput({ onSubmit }) {
+        // State for managing the API key input
+        const [apiKey, setApiKey] = useState('');
+
+        // Handle form submission
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            if (apiKey.trim()) {
+                // Store API key in browser's localStorage
+                localStorage.setItem('immich_api_key', apiKey.trim());
+                // Call parent's callback with the API key
+                onSubmit(apiKey.trim());
+            }
+        };
+
+        // Render API key input form
+        return (
+            <div className="max-w-md mx-auto mt-20 p-6 bg-white rounded-lg shadow-lg">
+                <h2 className="text-xl font-bold mb-4">Enter Immich API Key</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* API Key input field */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">API Key</label>
+                        <input
+                            type="password"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className="w-full p-2 border rounded-md"
+                            placeholder="Enter your Immich API key"
+                        />
+                    </div>
+                    <button type="submit" className="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        Save API Key
+                    </button>
+                    <p className="text-sm text-gray-600">
+                        Your API key can be found in Immich Settings → Security → API Keys
+                    </p>
+                </form>
+            </div>
+        );
+    }
+
+    /**
+     * Main component for editing image metadata
+     * Handles fetching asset data and updating metadata
+     */
+    function MetadataEditor() {
+        // State management
+        const [asset, setAsset] = useState(null);           // Stores asset data
+        const [loading, setLoading] = useState(true);       // Loading state
+        const [error, setError] = useState(null);           // Error state
+        const [apiKey, setApiKey] = useState(localStorage.getItem('immich_api_key')); // API key
+        const [metadata, setMetadata] = useState({          // Metadata form state
+            description: '',
+            rating: 0,
+            latitude: '',
+            longitude: ''
+        });
+
+        // Effect hook to fetch asset data when component mounts or API key changes
+        useEffect(() => {
+            if (apiKey) {
+                // Get asset ID from URL parameters
+                const params = new URLSearchParams(window.location.search);
+                const id = params.get('id');
+                if (id) {
+                    fetchAsset(id);
+                } else {
+                    setError('No asset ID provided');
+                    setLoading(false);
+                }
+            } else {
+                setLoading(false);
+            }
+        }, [apiKey]);
+
+        /**
+         * Fetches asset data from the Immich API
+         * @param {string} id - Asset ID to fetch
+         */
+        const fetchAsset = async (id) => {
+            try {
+                const response = await fetch(`/api/assets/${id}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'x-api-key': apiKey
+                    }
+                });
+
+                // Handle invalid API key
+                if (response.status === 401) {
+                    localStorage.removeItem('immich_api_key');
+                    setApiKey(null);
+                    throw new Error('Invalid API key');
+                }
+
+                if (!response.ok) throw new Error('Failed to fetch asset');
+
+                // Update state with fetched data
+                const data = await response.json();
+                setAsset(data);
+                setMetadata({
+                    description: data.exifInfo?.description || '',
+                    rating: data.exifInfo?.rating || 0,
+                    latitude: data.exifInfo?.latitude || '',
+                    longitude: data.exifInfo?.longitude || ''
+                });
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        /**
+         * Handles form submission to update metadata
+         * @param {Event} e - Form submission event
+         */
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            if (!asset) return;
+
+            try {
+                // Prepare update data
+                const updateData = {
+                    description: metadata.description,
+                    rating: parseInt(metadata.rating) || 0
+                };
+
+                // Only include valid coordinates
+                if (!isNaN(parseFloat(metadata.latitude))) {
+                    updateData.latitude = parseFloat(metadata.latitude);
+                }
+                if (!isNaN(parseFloat(metadata.longitude))) {
+                    updateData.longitude = parseFloat(metadata.longitude);
+                }
+
+                console.log('Sending update:', updateData);
+
+                // Send update request
+                const response = await fetch(`/api/assets/${asset.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'x-api-key': apiKey
+                    },
+                    body: JSON.stringify(updateData)
+                });
+
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(responseData.details || responseData.error || 'Failed to update metadata');
+                }
+
+                // Update UI with new data
+                setAsset(responseData);
+                alert('Metadata updated successfully');
+            } catch (err) {
+                console.error('Update error:', err);
+                alert('Error updating metadata: ' + err.message);
+            }
+        };
+
+        // Conditional rendering based on state
+        if (!apiKey) {
+            return <ApiKeyInput onSubmit={setApiKey} />;
+        }
+
+        if (loading) {
+            return (
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+            );
+        }
+
+        if (error) {
+            return (
+                <div className="p-8 max-w-4xl mx-auto">
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                        Error: {error}
+                    </div>
+                </div>
+            );
+        }
+
+        if (!asset) {
+            return (
+                <div className="p-8 max-w-4xl mx-auto">
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
+                        No asset found
+                    </div>
+                </div>
+            );
+        }
+
+        // Main editor interface
+        return (
+            <div className="p-8 max-w-4xl mx-auto">
+                {/* Header with title and API key reset */}
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Metadata Editor</h1>
+                    <button 
+                        onClick={() => {
+                            localStorage.removeItem('immich_api_key');
+                            setApiKey(null);
+                        }}
+                        className="text-sm text-gray-600 hover:text-red-600"
+                    >
+                        Change API Key
+                    </button>
+                </div>
+
+                {/* Image preview */}
+                <div className="mb-8">
+                    <img 
+                        src={`/api/assets/${asset.id}/thumbnail?size=preview`}
+                        alt="Asset preview"
+                        className="rounded-lg shadow-lg max-w-full"
+                    />
+                </div>
+
+                {/* Metadata form */}
+                <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+                    {/* Description field */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <textarea
+                            value={metadata.description}
+                            onChange={(e) => setMetadata({...metadata, description: e.target.value})}
+                            className="w-full p-2 border rounded-md"
+                            rows="4"
+                        />
+                    </div>
+
+                    {/* Location fields */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Latitude</label>
+                            <input
+                                type="number"
+                                step="any"
+                                value={metadata.latitude}
+                                onChange={(e) => setMetadata({...metadata, latitude: e.target.value})}
+                                className="w-full p-2 border rounded-md"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium mb-1">Longitude</label>
+                            <input
+                                type="number"
+                                step="any"
+                                value={metadata.longitude}
+                                onChange={(e) => setMetadata({...metadata, longitude: e.target.value})}
+                                className="w-full p-2 border rounded-md"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Rating field */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1">Rating (0-5)</label>
+                        <input
+                            type="number"
+                            min="0"
+                            max="5"
+                            value={metadata.rating}
+                            onChange={(e) => setMetadata({...metadata, rating: e.target.value})}
+                            className="w-24 p-2 border rounded-md"
+                        />
+                    </div>
+
+                    {/* Submit button */}
+                    <button
+                        type="submit"
+                        className="w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                    >
+                        Save Metadata
+                    </button>
+                </form>
+            </div>
+        );
+    }
+
+    // Initialize React app
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(MetadataEditor));
+</script>
+</body>
+</html>
