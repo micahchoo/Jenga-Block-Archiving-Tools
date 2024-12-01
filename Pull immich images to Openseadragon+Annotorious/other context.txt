@@ -1,0 +1,1288 @@
+//documentation
+anno components and hooks
+
+8.01 KB •225 lines•Formatting may be inconsistent from source
+
+Hooks Reference
+
+Annotorious provides hooks for accessing the anno Annotator instance, annotations, and other API features. These hooks are available anywhere below the <Annotorious> context provider.
+
+Tip
+
+If these hooks are not working for you, double check that you wrapped your application (or the component that holds your annotatable image) with the <Annotorious> context tag. Forgetting the context wrapper is a small but common mistake.
+useAnnotation
+
+const annotation = useAnnotation(id);
+
+Retrieves a single annotation by its ID and subscribes to changes.
+Argument	Type	Description
+id	string	The ID of the annotation to retrieve.
+
+Returns: ImageAnnotation | undefined
+useAnnotations
+
+const annotations: ImageAnnotation[] = useAnnotations(debounce);
+
+Returns the live annotation state. To limit re-rendering, you can optionally debounce the state updates.
+Argument	Type	Default	Description
+debounce	number	0	Debounce the state update by the given number of milliseconds.
+
+Returns: Array<ImageAnnotation>
+useAnnotator
+
+const anno = useAnnotator();
+
+Provides access to the vanilla ImageAnnotator or OpenSeadragonAnnotator instance. In TypeScript, you can include a type argument to indicate the return type.
+
+const imageAnnotator = useAnnotator<AnnotoriousImageAnnotator>();
+
+// or
+
+const osdAnnotator = useAnnotator<AnnotoriousOpenSeadragonAnnotator>();
+
+Note: in the React bindings package, the types for ImageAnnotator and OpenSeadragonAnnotator are renamed to AnnotoriousImageAnnotator and AnnotoriousOpenSeadragonAnnotator to prevent name clashes with the React components of the same name.
+
+Returns: ImageAnnotator | OpenSeadragonAnnotator
+useAnnotatorUser
+
+Returns the current annotator user set via the anno.setUser() method, if any.
+
+const user: User = useAnnotatorUser();
+
+Returns: User
+useSelection
+
+const { selected, event } = useSelection();
+
+Returns the current selection state object and, optionally, the associated pointer event.
+
+Returns:
+Argument	Type	Description
+selected	Array<Selection>	The selected annotations.
+event	PointerEvent	Optional. The associated user pointer event.
+Selection
+
+The selection object contains the selected annotation and a flag indicating whether the selected annotation has been made editable by the selection.
+Argument	Type	Description
+annotation	ImageAnnotation	The selected annotations.
+editable	boolean	Optional. Whether the annotation is currently editable.
+useViewportState
+
+const annotations: ImageAnnotation[] = useViewportState(debounce);
+
+OpenSeadragon only. Returns the annotations currently visible in the viewport. This hook is only available with OpenSeadragon, and will respond to zooming and panning of the OpenSeadragon image. You can optionally debounce this hook, to limit re-rendering.
+Argument	Type	Default	Description
+debounce	number	0	Debounce the state update by the given number of milliseconds.
+
+Returns: Array<ImageAnnotation>
+
+Component Reference
+Annotorious
+
+A required root context component. You can use Annotorious-provided hooks anywhere below the Annotorious component.
+
+<Annotorious>
+  <ImageAnnotator>
+    <img src="example.jpg" />
+  </ImageAnnotator>
+</Annotorious>
+
+Image components
+
+These components provide React bindings for the standard version of Annotorious, for annotating JPEG or PNG images.
+ImageAnnotator
+
+Wraps an image and applies an annotation layer to it.
+
+import { Annotorious, ImageAnnotator } from '@annotorious/react';
+
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <ImageAnnotator
+        containerClassName="annotation-layer"
+        tool="polygon">
+        <img src="example.jpg" />
+      </ImageAnnotator>
+    </Annotorious>
+  );
+}
+
+Props
+
+This components supports all of the init options of the vanilla JS createImageAnnotator function as props, as well as some additional ones:
+Prop	Type	Default	Description
+adapter	FormatAdapter		An optional format crosswalk adapter.
+autoSave	boolean	false	When set to true, annotation update events trigger instantly when the user is idle. If false, update events only triger after the user actively de-selects the annotation after editing.
+containerClassName	string		className applied to the DIV wrapper element.
+drawingEnabled	boolean	true	Enables or disables drawing functionality.
+drawingMode	”click” | “drag"	"drag”	Determines how drawing is initiated.
+filter	Filter		A function to control which annotations to display, and which to hide.
+userSelectAction	UserSelectAction	”EDIT”	A userSelectAction or function which determines what happens when the user selects an annotation interactively.
+style	[StyleDefinition]((/api-reference/drawing-style)		Sets the global (static or data-driven) drawing style.
+tool	”rectangle” | “polygon"	"rectangle”	Changes the current drawing tool.
+ImagePopup
+
+…TODO…
+OpenSeadragon Components
+
+These components provide React bindings for the OpenSeadragon version of Annotorious, for annotating high-resolution zoomable images and IIIF images.
+OpenSeadragonAnnotator
+
+Wraps an OpenSeadragonViewer and applies an annotation layer to it.
+
+import { Annotorious, OpenSeadragonAnnotator, OpenSeadragonViewer } from '@annotorious/react';
+
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <OpenSeadragonAnnotator
+        drawingEnabled={false}
+        tool="polygon">
+
+        <OpenSeadragonViewer
+          className="openseadragon"
+          options={OSD_OPTIONS} />
+      </OpenSeadragonAnnotator>
+    </Annotorious>
+  );
+}
+
+Props
+
+This components supports all of the init options of the vanilla JS createImageAnnotator function as props, as well as some additional ones:
+Prop	Type	Default	Description
+adapter	FormatAdapter		An optional format crosswalk adapter.
+autoSave	boolean	false	When set to true, annotation update events trigger instantly when the user is idle. If false, update events only triger after the user actively de-selects the annotation after editing.
+drawingEnabled	boolean	true	Enables or disables drawing functionality.
+drawingMode	”click” | “drag"	"drag”	Determines how drawing is initiated.
+filter	Filter		A function to control which annotations to display, and which to hide.
+userSelectAction	UserSelectAction	”EDIT”	A userSelectAction or function which determines what happens when the user selects an annotation interactively.
+style	[StyleDefinition]((/api-reference/drawing-style)		Sets the global (static or data-driven) drawing style.
+tool	”rectangle” | “polygon"	"rectangle”	Changes the current drawing tool.
+OpenSeadragonViewer
+
+A helper component that wraps an OpenSeadragon viewer.
+
+import { Annotorious, OpenSeadragonViewer } from '@annotorious/react';
+
+const OSD_OPTIONS =  {
+  tileSources: {
+    type: 'image',
+    url: '/images/sample-image.jpg'
+  }
+};
+
+export default function App() {
+  return (
+    <Annotorious>
+      <OpenSeadragonViewer
+        className="openseadragon"
+        options={OSD_OPTIONS} />
+    </Annotorious>
+  );
+}
+
+Props
+Prop	Type	Default	Description
+className	string		className to apply to the OpenSeadragon container element
+options	OpenSeadragon.Options	required	OpenSeadragon viewer options.
+
+Note that it is not necessary to provide an element or id attribute in the OpenSeadragon viewer options. (The OpenSeadragon container element will be generated from the React component.)
+OpenSeadragonPopup
+
+An helper component for creating your own annotation popup. The popup opens when the annotation is selected, either by user action or programmatically.
+
+import {
+  Annotorious,
+  OpenSeadragonAnnotator,
+  OpenSeadragonPopup
+  OpenSeadragonViewer
+} from '@annotorious/react';
+
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <OpenSeadragonAnnotator
+        drawingEnabled={false}
+        tool="polygon">
+
+        <OpenSeadragonViewer
+          className="openseadragon"
+          options={OSD_OPTIONS} />
+
+        <OpenSeadragonPopup
+          popup={props => (
+            <div className="annotorious-popup">Hello World</div>
+          )} />
+      </OpenSeadragonAnnotator>
+    </Annotorious>
+  );
+}
+
+immich api (ask which page you want to reference when you need it)
+
+3.76 KB •183 lines•Formatting may be inconsistent from source
+    Introduction
+    Activities
+        getActivities
+        createActivity
+        getActivityStatistics
+        deleteActivity
+    Users (admin)
+    Albums
+    API Keys
+    Assets
+        deleteAssets
+        uploadAsset
+        updateAssets
+        checkBulkUpload
+        getAllUserAssetsByDeviceId
+        checkExistingAssets
+        runAssetJobs
+        getMemoryLane
+        getRandom
+        getAssetStatistics
+        getAssetInfo
+        updateAsset
+        downloadAsset
+        replaceAsset
+        viewAsset
+        playAssetVideo
+    Deprecated
+        getRandom
+    Audit
+        getAuditDeletes
+    Authentication
+        signUpAdmin
+        changePassword
+        login
+        logout
+        validateAccessToken
+    Download
+        downloadArchive
+        getDownloadInfo
+    Duplicates
+        getAssetDuplicates
+    Faces
+        getFaces
+        reassignFacesById
+    Jobs
+        getAllJobsStatus
+        createJob
+        sendJobCommand
+    Libraries
+        getAllLibraries
+        createLibrary
+        deleteLibrary
+        getLibrary
+        updateLibrary
+        scanLibrary
+        getLibraryStatistics
+        validate
+    Map
+        getMapMarkers
+        reverseGeocode
+    Memories
+        searchMemories
+        createMemory
+        deleteMemory
+        getMemory
+        updateMemory
+        removeMemoryAssets
+        addMemoryAssets
+    Notifications
+        sendTestEmail
+    OAuth
+        startOAuth
+        finishOAuth
+        linkOAuthAccount
+        redirectOAuthToMobile
+        unlinkOAuthAccount
+    Partners
+        getPartners
+        removePartner
+        createPartner
+        updatePartner
+    People
+        getAllPeople
+        createPerson
+        updatePeople
+        getPerson
+        updatePerson
+        mergePerson
+        reassignFaces
+        getPersonStatistics
+        getPersonThumbnail
+    File Reports
+        getAuditFiles
+        getFileChecksums
+        fixAuditFiles
+    Search
+        getAssetsByCity
+        getExploreData
+        searchMetadata
+        searchPerson
+        searchPlaces
+        searchRandom
+        searchSmart
+        getSearchSuggestions
+    Server
+        getAboutInfo
+        getServerConfig
+        getServerFeatures
+        deleteServerLicense
+        getServerLicense
+        setServerLicense
+        getSupportedMediaTypes
+        pingServer
+        getServerStatistics
+        getStorage
+        getTheme
+        getServerVersion
+        getVersionHistory
+    Sessions
+        deleteAllSessions
+        getSessions
+        deleteSession
+    Shared Links
+        getAllSharedLinks
+        createSharedLink
+        getMySharedLink
+        removeSharedLink
+        getSharedLinkById
+        updateSharedLink
+        removeSharedLinkAssets
+        addSharedLinkAssets
+    Stacks
+        deleteStacks
+        searchStacks
+        createStack
+        deleteStack
+        getStack
+        updateStack
+    Sync
+        getDeltaSync
+        getFullSyncForUser
+    System Config
+        getConfig
+        updateConfig
+        getConfigDefaults
+        getStorageTemplateOptions
+    System Metadata
+        getAdminOnboarding
+        updateAdminOnboarding
+        getReverseGeocodingState
+    Tags
+        getAllTags
+        createTag
+        upsertTags
+        bulkTagAssets
+        deleteTag
+        getTagById
+        updateTag
+        untagAssets
+        tagAssets
+    Timeline
+        getTimeBucket
+        getTimeBuckets
+    Trash
+        emptyTrash
+        restoreTrash
+        restoreAssets
+    Users
+        searchUsers
+        getMyUser
+        updateMyUser
+        deleteUserLicense
+        getUserLicense
+        setUserLicense
+        getMyPreferences
+        updateMyPreferences
+        deleteProfileImage
+        createProfileImage
+        getUser
+        getProfileImage
+    View
+        getAssetsByOriginalPath
+        getUniqueOriginalPaths
+
+
+server.js
+
+2.95 KB •113 lines•Formatting may be inconsistent from source
+import express from 'express';
+import cors from 'cors';
+import morgan from 'morgan';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+
+const app = express();
+const PORT = 3000;
+const TARGET = 'http://192.168.1.106:2283';
+
+// Add more detailed CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173', // Vite dev server
+  credentials: true
+}));
+
+app.use(morgan('dev'));
+app.use(express.json());
+
+// Add request logging middleware
+app.use((req, res, next) => {
+  // Debug full request
+  console.log('\n=== Incoming Request ===');
+  console.log(`${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+
+  // CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Api-Key, Content-Type, Accept');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
+app.get('/api/assets/:id/original', async (req, res) => {
+  const assetId = req.params.id;
+  
+  console.log('\n=== Incoming Request ===');
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  
+  const apiKey = req.header('x-api-key');
+
+  if (!apiKey) {
+    return res.status(401).json({ error: 'No API key provided' });
+  }
+
+  try {
+    console.log('Fetching from Immich...');
+    const response = await fetch(`${TARGET}/api/assets/${assetId}/original`, {
+      headers: {
+        'X-Api-Key': apiKey,
+        'Accept': 'application/octet-stream'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Immich returned ${response.status}`);
+    }
+
+    // Get the buffer directly
+    const buffer = await response.arrayBuffer();
+    const contentType = response.headers.get('content-type');
+
+    res.set({
+      'Content-Type': contentType || 'image/jpeg',
+      'Content-Length': buffer.byteLength,
+      'Cache-Control': 'no-cache'
+    });
+
+    res.send(Buffer.from(buffer));
+
+  } catch (error) {
+    console.error('Error processing request:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: err.message });
+});
+
+// General API proxy
+const apiProxy = createProxyMiddleware({
+  target: TARGET,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api': '/api'
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log('Proxying request:', req.method, req.url);
+    if (req.headers['x-api-key']) {
+      proxyReq.setHeader('x-api-key', req.headers['x-api-key']);
+    }
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    console.log('Proxy response:', proxyRes.statusCode);
+  },
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+  }
+});
+
+app.use('/api', apiProxy);
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Target API: ${TARGET}`);
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Annotorious
+
+Annotation Popups
+
+A Popup that shows information about an annotation when the user clicks on it is a common requirement. Annotorious makes it easy to build your own custom popups in React with the ImageAnnotationPopup component.
+Basic Example
+
+Here’s a basic example of how to build a custom popup with the ImageAnnotationPopup component:
+
+    App.tsx
+    App.css
+
+import {
+  Annotorious,
+  ImageAnnotationPopup,
+  ImageAnnotator
+} from '@annotorious/react';
+
+import './App.css';
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <ImageAnnotator>
+        <img src="example.jpg" />
+      </ImageAnnotator>
+
+      <ImageAnnotationPopup
+        popup={(props: PopupContentProps) => (
+          <div>
+            Hello World
+          </div>
+        )} />
+    </Annotorious>
+  );
+}
+
+ImageAnnotationPopup is completely unstyled. Be sure to add CSS styles according to your needs.
+Editing Body Payload
+
+Popups aren not just for displaying information – they’re also great for editing annotation content. Annotorious follows the W3C Web Annotation Data Model, storing custom payload in AnnotationBody objects. The ImageAnnotationPopup component provides an easy way to manipulate these bodies through callback props.
+
+    onCreateBody(body: Partial<AnnotationBody>): adds a new body to the annotation.
+    onDeleteBody(id: string): removes a body from the anntation using its ID.
+    onUpdateBody(current: AnnotationBody, next: Partial<AnnotationBody>): modifies an existing body by replacing it with an updated version.
+
+Tip
+
+The callback props simplify body creation and updates by handling certain fields automatically. You do not need to provide all properties of the AnnotationBody yourself. Annotorious will automatically fill in a unique body ID, creator identity information, and timestamp data (created/updated) if you leave them blank.
+Example: Editable Comments
+
+Let’s look at a more advanced popup that allows users to view and edit comments. In this example, we will store comments in a body with a commenting purpose.
+
+import { useState, useEffect } from 'react';
+import {
+  Annotorious,
+  ImageAnnotationPopup,
+  ImageAnnotator,
+  AnnotationBody
+} from '@annotorious/react';
+
+const CommentPopup = (props: PopupContentProps) => {
+
+  const { annotation, onCreateBody, onUpdateBody } = props;
+
+  const [comment, setComment] = useState('');
+
+  useEffect(() => {
+    const commentBody = annotation.bodies.find(body => body.purpose === 'commenting');
+    setComment(commentBody ? commentBody.value : '');
+  }, [annotation.bodies]);
+
+  const onSave = () => {
+    const updated = {
+      purpose: 'commenting',
+      value: comment
+    };
+
+    const commentBody = annotation.bodies.find(body => body.purpose === 'commenting');
+    if (commentBody) {
+      onUpdateBody(commentBody, updated);
+    } else {
+      onCreateBody(updated);
+    }
+  };
+
+  return (
+    <div>
+      <textarea
+        value={comment}
+        onChange={e => setComment(e.target.value)} />
+
+      <button onClick={onSave}>Save</button>
+    </div>
+  )
+
+}
+
+export default function App() {
+  return (
+    <Annotorious>
+      <ImageAnnotator>
+        <img src="example.jpg" />
+      </ImageAnnotator>
+
+      <ImageAnnotationPopup popup={(props: PopupContentProps) => (
+        <CommentPopup {...props} />
+      )} />
+    </Annotorious>
+  );
+}
+
+OpenSeadragon
+
+Building popups for OpenSeadragon works exactly the same way. There is only one crucial difference: be sure to use the OpenSeadragonAnnotationPopup component instead of ImageAnnotationPopup. This component will also handle popup positioning correctly when zooming and panning the viewer.
+
+import {
+  Annotorious,
+  OpenSeadragonAnnotationPopup,
+  OpenSeadragonAnnotator,
+  OpenSeadragonViewer
+} from '@annotorious/react';
+
+import './App.css';
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <OpenSeadragonAnnotator>
+        <OpenSeadragonViewer options={{
+          tileSources: {
+            type: 'image',
+            url: '/images/sample-image.jpg'
+          }
+        }} />
+
+        <OpenSeadragonAnnotationPopup
+          popup={(props: PopupContentProps) => (
+            <div>
+              Hello World
+            </div>
+          )} />
+      </OpenSeadragonAnnotator>
+    </Annotorious>
+  );
+}
+
+
+React OpenSeadragon and IIIF
+
+Use Annotorious together with OpenSeadragon to annotate high-resolution zoomable images with React, including images served via the International Image Interoperability Framework (IIIF) standard.
+
+import {
+  Annotorious,
+  OpenSeadragonAnnotator,
+  OpenSeadragonViewer
+} from '@annotorious/react';
+
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <OpenSeadragonAnnotator>
+        <OpenSeadragonViewer options={{
+          tileSources: {
+            type: 'image',
+            url: '/images/sample-image.jpg'
+          }
+        }} />
+      </OpenSeadragonAnnotator>
+    </Annotorious>
+  );
+}
+
+Step-by-Step Guide
+
+    Import the Annotorious, OpenSeadragonViewer and OpenSeadragonAnnotator components.
+
+    import { Annotorious, OpenSeadragonAnnotator, OpenSeadragonViewer } from '@annotorious/react';
+
+Import Annotorious base CSS styles.
+
+import '@annotorious/react/annotorious-react.css';
+
+Important: wrap your application with the <Annotatorious> root context tag - other Annotorious components depend on it. You can use Annotorious-provided hooks anywhere below the context tag.
+
+    App.tsx
+    MyAnnotatableViewer.tsx
+
+export default function App() {
+  return (
+    <Annotorious>
+      <MyAnnotatableViewer />
+    </Annotorious>
+  );
+}
+
+Styling
+
+You can apply custom styling to annotations via the style prop. The style can be:
+
+    A DrawingStyle object.
+    A function that receives the ImageAnnotation and the AnnotationState as an input, and returns a DrawingStyle.
+
+const style = (annotation: ImageAnnotation, state: AnnotationState) => ({
+  fill: state.hovered ? '#ff0000' : '#ffffff',
+  fillOpacity: 0.25
+});
+
+<OpenSeadragonAnnotator style={style}>
+  <OpenSeadragonViewer options={OSD_OPTS} />
+</OpenSeadragonAnnotator>
+
+Filters
+
+Using a filter, you can dynamically control the visibility of specific annotations, based on their data or external criteria. The filter is a function that receives the ImageAnnotation as an input, and returns a boolean. true makes the annotation visible, false hides it.
+
+const showImportantFilter = (annotation: Annotation) => {
+  // Show only if the annotation has an 'important' tag
+  return annotation.bodies.some(b => b.purpose === 'tagging' && b.value === 'important');
+};
+
+<OpenSeadragonAnnotator filter={showImportantFilter}>
+  <OpenSeadragonViewer options={OSD_OPTS} />
+</OpenSeadragonAnnotator>;
+
+Selection Behavior
+
+When a user selects an annotation by click or tap, the default behavior is that the shape will become editable. You can change this behavior through the userSelectAction prop. The prop accepts:
+
+    a UserSelectAction object.
+    a function that receives an ImageAnnotation as input, and returns a UserSelectAction.
+
+A UserSelectAction has one of the three following values.
+
+    EDIT: makes the annotation editable, allowing the users to modify its shape (default).
+    SELECT: clicking an annotation triggers the relevant selection event, but the annotation will not become editable.
+    NONE: the annotation is inert. Clicking or tapping it has no effect.
+
+import { UserSelectAction } from '@annotorious/react';
+
+// Make all annotations 'read-only'.
+<OpenSeadragonAnnotator userSelectAction={UserSelectAction.SELECT}>
+  <OpenSeadragonViewer options={OSD_OPTS} />
+</OpenSeadragonAnnotator>
+
+// Function: only allow editing on my own annotation.
+const allowEditingMyOwn = (annotation: ImageAnnotation) => {
+  const isMine = annotation.target.creator.id == 'me';
+  return isMine ? UserSelectAction.EDIT : UserSelectAction.SELECT;
+};
+
+<OpenSeadragonAnnotator userSelectAction={allowEditingMyOwn}>
+  <OpenSeadragonViewer options={OSD_OPTS} />
+</OpenSeadragonAnnotator>
+
+W3C Format Adapter
+
+A FormatAdapter adds support for different annotation data formats, by introducing crosswalk functionality between Annotorious’ internal annotation data model and other standards.
+
+You can supply a format adapter through the optional adapter prop. Currently, the only available adapter is for the W3C Web Annotation Data Model.
+
+import {
+  Annotorious,
+  OpenSeadragonAnnotator,
+  OpenSeadragonViewer,
+   W3CImageFormat
+} from '@annotorious/react';
+
+<Annotorious>
+  <OpenSeadragonAnnotator adapter={W3CImageFormat('example.jpg')}>
+    <OpenSeadragonViewer options={OSD_OPTS} />
+  </OpenSeadragonAnnotator>
+</Annotorious>
+
+Read more about the Annotorious Data Format, the W3C Format and the differences here.
+
+React Image Annotation
+
+Add an annotation layer to an image using the Annotorious React components.
+
+import { Annotorious, ImageAnnotator } from '@annotorious/react';
+
+import '@annotorious/react/annotorious-react.css';
+
+export default function App() {
+  return (
+    <Annotorious>
+      <ImageAnnotator>
+        <img src="example.jpg" />
+      </ImageAnnotator>
+    </Annotorious>
+  );
+}
+
+Step-by-Step Guide
+
+    Import the Annotorious and ImageAnnotator components.
+
+    import { Annotorious, ImageAnnotator } from '@annotorious/react';
+
+Import Annotorious base CSS styles.
+
+import '@annotorious/react/annotorious-react.css';
+
+Important: wrap your application with the <Annotatorious> root context tag - other Annotorious components depend on it. You can use Annotorious-provided hooks anywhere below the context tag.
+
+    App.tsx
+    MyAnnotatableImage.tsx
+
+export default function App() {
+  return (
+    <Annotorious>
+      <MyAnnotatableImage />
+    </Annotorious>
+  );
+}
+
+Styling
+
+You can apply custom styling to annotations via the style prop. The style can be:
+
+    A DrawingStyle object.
+    A function that receives the ImageAnnotation and the AnnotationState as an input, and returns a DrawingStyle.
+
+const style = (annotation: ImageAnnotation, state: AnnotationState) => ({
+  fill: state.hovered ? '#ff0000' : '#ffffff',
+  fillOpacity: 0.25
+});
+
+<ImageAnnotator style={style}>
+  <img src="example.jpg" />
+</ImageAnnotator>
+
+Filters
+
+Using a filter, you can dynamically control the visibility of specific annotations, based on their data or external criteria. The filter is a function that receives the ImageAnnotation as an input, and returns a boolean. true makes the annotation visible, false hides it.
+
+const showImportantFilter = (annotation: Annotation) => {
+  // Show only if the annotation has an 'important' tag
+  return annotation.bodies.some(b => b.purpose === 'tagging' && b.value === 'important');
+};
+
+<ImageAnnotator filter={showImportantFilter}>
+  <img src="example.jpg" />
+</ImageAnnotator>;
+
+Selection Behavior
+
+When a user selects an annotation by click or tap, the default behavior is that the shape will become editable. You can change this behavior through the userSelectAction prop. The prop accepts:
+
+    a UserSelectAction object.
+    a function that receives an ImageAnnotation as input, and returns a UserSelectAction.
+
+A UserSelectAction has one of the three following values.
+
+    EDIT: makes the annotation editable, allowing the users to modify its shape (default).
+    SELECT: clicking an annotation triggers the relevant selection event, but the annotation will not become editable.
+    NONE: the annotation is inert. Clicking or tapping it has no effect.
+
+import { UserSelectAction } from '@annotorious/react';
+
+// Make all annotations 'read-only'.
+<ImageAnnotator userSelectAction={UserSelectAction.SELECT}>
+  <img src="example.jpg" />
+</ImageAnnotator>
+
+// Function: only allow editing on my own annotation.
+const allowEditingMyOwn = (annotation: ImageAnnotation) => {
+  const isMine = annotation.target.creator.id == 'me';
+  return isMine ? UserSelectAction.EDIT : UserSelectAction.SELECT;
+};
+
+<ImageAnnotator userSelectAction={allowEditingMyOwn}>
+  <img src="example.jpg" />
+</ImageAnnotator>
+
+W3C Format Adapter
+
+A FormatAdapter adds support for different annotation data formats, by introducing crosswalk functionality between Annotorious’ internal annotation data model and other standards.
+
+You can supply a format adapter through the optional adapter prop. Currently, the only available adapter is for the W3C Web Annotation Data Model.
+
+import { Annotorious, ImageAnnotator, W3CImageFormat } from '@annotorious/react';
+
+<Annotorious>
+  <ImageAnnotator adapter={W3CImageFormat('example.jpg')}>
+    <img src="example.jpg" />
+  </ImageAnnotator>
+</Annotorious>
+
+Read more about the Annotorious Data Format, the W3C Format and the differences here.
+About the metadata
+
+15.04 KB •342 lines•Formatting may be inconsistent from source
+Does the Immich API support:
+
+    Getting XML sidecar files for assets? XMP Sidecars
+
+Immich can ingest XMP sidecars on file upload (via the CLI) as well as detect new sidecars that are placed in the filesystem for existing images.
+[XMP sidecars]
+
+XMP sidecars are external XML files that contain metadata related to media files. Many applications read and write these files either exclusively or in addition to the metadata written to image files. They can be a powerful tool for editing and storing metadata of a media file without modifying the media file itself. When Immich receives or detects an XMP sidecar for a media file, it will attempt to extract the metadata from both the sidecar as well as the media file. It will prioritize the metadata for fields in the sidecar but will fall back and use the metadata in the media file if necessary.
+
+When importing files via the CLI bulk uploader or parsing photo metadata for external libraries, Immich will automatically detect XMP sidecar files as files that exist next to the original media file. Immich will look files that have the same name as the photo, but with the .xmp file extension. The same name can either include the photo's file extension or without the photo's file extension. For example, for a photo named PXL_20230401_203352928.MP.jpg, Immich will look for an XMP file named either PXL_20230401_203352928.MP.jpg.xmp or PXL_20230401_203352928.MP.xmp. If both PXL_20230401_203352928.MP.jpg.xmp and PXL_20230401_203352928.MP.xmp are present, Immich will prefer PXL_20230401_203352928.MP.jpg.xmp.
+
+There are 2 administrator jobs associated with sidecar files: SYNC and DISCOVER. The sync job will re-scan all media with existing sidecar files and queue them for a metadata refresh. This is a great use case when third-party applications are used to modify the metadata of media. The discover job will attempt to scan the filesystem for new sidecar files for all media that does not currently have a sidecar file associated with it.
+[Sidecar Administrator Jobs] 
+
+    Updating/creating sidecar files? updateAsset
+
+updateAsset
+Path Parameters
+id uuid — REQUIRED
+Request Body — REQUIRED
+dateTimeOriginal string
+description string
+isArchived boolean
+isFavorite boolean
+latitude number
+livePhotoVideoId uuid
+longitude number
+rating number
+
+Possible values: value ≤ 5
+Responses
+200
+Schema — OPTIONAL
+checksum string
+
+base64 encoded sha1 hash
+deviceAssetId string
+deviceId string
+duplicateId string — OPTIONAL
+duration string
+exifInfo object — OPTIONAL
+city string — OPTIONAL
+country string — OPTIONAL
+dateTimeOriginal date-time — OPTIONAL
+description string — OPTIONAL
+exifImageHeight number — OPTIONAL
+exifImageWidth number — OPTIONAL
+exposureTime string — OPTIONAL
+fNumber number — OPTIONAL
+fileSizeInByte int64 — OPTIONAL
+focalLength number — OPTIONAL
+iso number — OPTIONAL
+latitude number — OPTIONAL
+lensModel string — OPTIONAL
+longitude number — OPTIONAL
+make string — OPTIONAL
+model string — OPTIONAL
+modifyDate date-time — OPTIONAL
+orientation string — OPTIONAL
+projectionType string — OPTIONAL
+rating number — OPTIONAL
+state string — OPTIONAL
+timeZone string — OPTIONAL
+fileCreatedAt date-time
+fileModifiedAt date-time
+hasMetadata boolean
+id string
+isArchived boolean
+isFavorite boolean
+isOffline boolean
+isTrashed boolean
+libraryId string — OPTIONAL
+
+This property was deprecated in v1.106.0
+livePhotoVideoId string — OPTIONAL
+localDateTime date-time
+originalFileName string
+originalMimeType string — OPTIONAL
+originalPath string
+owner object — OPTIONAL
+avatarColor string
+
+Possible values: [primary, pink, red, yellow, blue, green, purple, orange, gray, amber]
+email string
+id string
+name string
+profileChangedAt date-time
+profileImagePath string
+ownerId string
+people object[] — OPTIONAL
+birthDate date
+faces object[]
+boundingBoxX1 integer
+boundingBoxX2 integer
+boundingBoxY1 integer
+boundingBoxY2 integer
+id uuid
+imageHeight integer
+imageWidth integer
+sourceType string — OPTIONAL
+
+Possible values: [machine-learning, exif]
+id string
+isHidden boolean
+name string
+thumbnailPath string
+updatedAt date-time — OPTIONAL
+
+This property was added in v1.107.0
+resized boolean — OPTIONAL
+
+This property was deprecated in v1.113.0
+stack object — OPTIONAL
+assetCount integer
+id string
+primaryAssetId string
+tags object[] — OPTIONAL
+color string — OPTIONAL
+createdAt date-time
+id string
+name string
+parentId string — OPTIONAL
+updatedAt date-time
+value string
+thumbhash string
+type string
+
+Possible values: [IMAGE, VIDEO, AUDIO, OTHER]
+unassignedFaces object[] — OPTIONAL
+boundingBoxX1 integer
+boundingBoxX2 integer
+boundingBoxY1 integer
+boundingBoxY2 integer
+id uuid
+imageHeight integer
+imageWidth integer
+sourceType string — OPTIONAL
+
+Possible values: [machine-learning, exif]
+updatedAt date-time
+
+    What's the current format of metadata storage?
+
+I'm working on an digital-archive focussed tool that integrates with Immich to provide metadata editing and image annotation for single images by passing the asset id in the url. The goal is to create a tool for metadata handling while remaining non-invasive and future-proof in Immich dev.
+I have tested a few proof-of-concept applications
+
+    Uses Immich's API to fetch image assets
+    Displays them in OpenSeadragon for high-resolution viewing
+    Integrates Annotorious for image annotation capabilities
+    Communicates with Immich's backend via a proxy server ( i couldn't get it to work with cors)
+
+This is what I want to do
+
+CRUD operations on the sidecar XMP files
+
+    Adding and editing custom fields from standard metadata schemas (Dublin Core, FOAF, etc.)
+    Visual annotation interface via Annotorious to store annotations in the XMP using the W3C standard
+
+Key Questions for the Community
+
+    if I write directly to the XMP sidecar in a custom format. What are the things that could break? Could it get overwritten the next time I use the metadata editor from inside Immich? What's the preferred approach for externally handling XMP sidecar files in Immich?
+    I thought about writing to a separate sidecar but I want to make it so that future Immich development of export and sharing images with metadata won't be affected?(essentially how do I not affect portability)
+
+PS. I am not a developer, all of this is very new to me
+Replies: 1 comment
+
+bo0tzz
+Nov 30, 2024
+Maintainer
+
+    Could it get overwritten the next time I use the metadata editor from inside Immich?
+
+Only the fields that are edited from Immich should be changed, any other fields should stay intact. If the whole file gets overwritten please open an issue about that.
+
+    What's the preferred approach for externally handling XMP sidecar files in Immich?
+
+Writing directly to the sidecar file is fine. You do probably want to trigger the right jobs afterward to make sure Immich picks up the changes.
+
+FOAF at a glance
+
+FOAF describes the world using simple ideas inspired by the Web. In FOAF descriptions, there are only various kinds of things and links, which we call properties. The types of the things we talk about in FOAF are called classes. FOAF is therefore defined as a dictionary of terms, each of which is either a class or a property. Other projects alongside FOAF provide other sets of classes and properties, many of which are linked with those defined in FOAF.
+
+FOAF descriptions are themselves published as linked documents in the Web (eg. using RDF/XML or RDFa syntax). The result of the FOAF project is a network of documents describing a network of people (and other stuff). Each FOAF document is itself an encoding of a descriptive network structure. Although these documents do not always agree or tell the truth, they have the useful characteristic that they can be easily merged, allowing partial and decentralised descriptions to be combined in interesting ways.
+
+FOAF collects a variety of terms; some describe people, some groups, some documents. Different kinds of application can use or ignore different parts of FOAF. The overview here shows one way of viewing FOAF terms: we ignore archaic and historical parts, and divide the rest into terms that only make sense on the Web, and those that have universal applicability when linking people and information.
+
+Main FOAF terms, grouped in broad categories.
+
+    Core - These classes and properties form the core of FOAF. They describe characteristics of people and social groups that are independent of time and technology; as such they can be used to describe basic information about people in present day, historical, cultural heritage and digital library contexts. In addition to various characteristics of people, FOAF defines classes for Project, Organization and Group as other kinds of agent. Related work: Dublin Core, SKOS, DOAP, SIOC, Org vocabulary, Bio vocabulary.
+    Social Web - in addition to the FOAF core terms, there are a number of terms for use when describing Internet accounts, addressbooks and other Web-based activities. Related work: Portable Contacts, W3C Social Web group.
+    Linked Data utilities - FOAF began as the 'RDFWeb' project, and established a widely adopted model for publishing simple factual data via a networked of linked RDF documents. FOAF remains important to the growing "Linked Data" community, while also maintaining a concern for information that is not readily summarised as simple factual data. FOAF is an attempt to use the Web to integrate factual information with information in human-oriented documents (eg. videos, books, spreadsheets, 3d models), as well as information that is still in people's heads. This history explains why FOAF includes a few 'demonstration' terms that served largely educational purposes (eg. geekcode), alongside a few technical utility terms (eg. focus, LabelProperty) that support wider information-linking efforts. The dictionary-based design of FOAF allows a certain pragmatism: we simply record here a set of terms that are useful to the Web community, while keeping an emphasis on the central idea of FOAF, which is about linking networks of information with networks of people.
+
+FOAF Core
+
+        Agent
+        Person
+        name
+        title
+        img
+        depiction (depicts)
+        familyName
+        givenName
+        knows
+        based_near
+        age
+        made (maker)
+        primaryTopic (primaryTopicOf)
+        Project
+        Organization
+        Group
+        member
+        Document
+        Image
+
+Social Web
+
+    nick
+    mbox
+    homepage
+    weblog
+    openid
+    jabberID
+    mbox_sha1sum
+    interest
+    topic_interest
+    topic (page)
+    workplaceHomepage
+    workInfoHomepage
+    schoolHomepage
+    publications
+    currentProject
+    pastProject
+    account
+    OnlineAccount
+    accountName
+    accountServiceHomepage
+    PersonalProfileDocument
+    tipjar
+    sha1
+    thumbnail
+    logo
+
+A-Z of FOAF terms (current and archaic)
+
+This is a complete alphabetical A-Z index of all FOAF terms, by class (categories or types) and by property. Note that it includes 'archaic' terms that are largely of historical interest.
+
+Classes: | Agent | Document | Group | Image | LabelProperty | OnlineAccount | OnlineChatAccount | OnlineEcommerceAccount | OnlineGamingAccount | Organization | Person | PersonalProfileDocument | Project |
+
+Properties: | account | accountName | accountServiceHomepage | age | aimChatID | based_near | birthday | currentProject | depiction | depicts | dnaChecksum | familyName | family_name | firstName | focus | fundedBy | geekcode | gender | givenName | givenname | holdsAccount | homepage | icqChatID | img | interest | isPrimaryTopicOf | jabberID | knows | lastName | logo | made | maker | mbox | mbox_sha1sum | member | membershipClass | msnChatID | myersBriggs | name | nick | openid | page | pastProject | phone | plan | primaryTopic | publications | schoolHomepage | sha1 | skypeID | status | surname | theme | thumbnail | tipjar | title | topic | topic_interest | weblog | workInfoHomepage | workplaceHomepage | yahooChatID |
+Example
+
+Here is a very basic document describing a person:
+
+<foaf:Person rdf:about="#danbri" xmlns:foaf="http://xmlns.com/foaf/0.1/">
+  <foaf:name>Dan Brickley</foaf:name>
+  <foaf:homepage rdf:resource="http://danbri.org/" />
+  <foaf:openid rdf:resource="http://danbri.org/" />
+  <foaf:img rdf:resource="/images/me.jpg" />
+</foaf:Person>
+
+ Title:
+The name of your website. Similar to <title> HTML tag.
+
+<meta name="DC.Title" content="Dublin Core Basics: the beginners guide.">
+
+Creator:
+The person or organization responsible for the content.
+
+<meta name="DC.Creator" content="Fernando Paladini" />
+
+Subject:
+The topic covered by the content.
+
+<meta name="DC.Subject" content="Dublin Core Meta Tags" />
+
+Description:
+Textual outline of the content. Can be the same as the content of <meta name="descripion"> tag.
+
+<meta name="DC.Description" content="Know and understand the basics of Dublin Core. Dublin Core Basics: The beginners guide." />
+
+Publisher:
+An entity (person, organization or service) responsible for making the content available.
+
+<meta name="DC.Publisher" content="Fernando Paladini" />
+
+Contributor:
+Person, organization or service that contribute to the content.
+
+<meta name="DC.Contributor" content="Fernando Paladini" />
+
+Date:
+A point or period of time associated with the lifecycle of content. Typically the date of when content become available. Available formats:
+
+    YYYY-MM-DD
+    YYYY-MM
+    YYYY
+
+<meta name="DC.Date" content="2014-02" />
+
+Type:
+A category for the content. A full list of Types can be found here. Following is the most used types:
+
+    "Text"
+    "Software"
+    "Service"
+
+<meta name="DC.Type" content="Text" />
+
+Format:
+How the content or resource is presented. A full list of Formats can be found here. As we are developers, the most used format is text/html.
+
+<meta name="DC.Format" content="text/html" />
+
+Identifier:
+An unique identifier to your content. Can be a string or number generate by a formal identification system - or just a URL.
+
+<meta name="DC.Identifier" content="http://www.mypage.com/2014/02/dublin-core-basics.html"/>
+
+Source:
+Where the content originally delivered from or a resource that is related intelectually to the described content.
+
+<meta name="DC.Source" content="http://www.mypage.com" />
+
+Language:
+In what language the content is written. You must the correct language code. You can find all language codes here.
+
+<meta name="DC.Language" content="en" />
+
+Relation:
+How the content relates to other resources for instance. Think in a chapter of a book, for example: the chapter isPartOf book. A full list of possible relations can be found here.
+
+<meta name="DC.Relation" content="http://www.mypage.com" scheme="IsPartOf" />
+
+Coverage:
+Where the content is physically located. Coverage will typically include spatial location (place name or geographic co-ordinates), temporal period (date, date range) or jurisdiction (named administrative entity).
+
+<meta name="DC.Coverage" content="Florianópolis, Brazil" />
+
+Rights:
+Typically a Rights element will contain a rights management statement for the resource, or reference a service providing such information. Rights information often encompasses Intellectual Property Rights (IPR), Copyright, and various Property Rights.
+
+<meta name="DC.Rights" content="Copyright 2014, Fernando Paladini, Ltd. All rights reserved." />
